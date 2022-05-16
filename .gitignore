@@ -16,5 +16,7 @@ engine/html/*
 # Vim
 *.swp
 
+engine/html/
+
 # Dependency directories (remove the comment below to include it)
 # vendor/
