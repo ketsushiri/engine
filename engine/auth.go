@@ -55,10 +55,7 @@ func registerUser(data *authData) bool {
 
 func parseRegisterForm(form url.Values) bool {
 	login, pass, key := form.Get("login"), form.Get("pass"), form.Get("key")
-	pred := func(s string) bool {
-		return s == ""
-	}
-	if pred(login) || pred(pass) || key != KEY {
+	if login == "" || pass == "" || key != KEY {
 		return false
 	}
 	return registerUser(&authData{login, pass})
