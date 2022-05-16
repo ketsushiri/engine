@@ -7,47 +7,6 @@ import (
 	"net/url"
 )
 
-const auth = `
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>Auth</title>
-</head>
-<body>
-    <center><h2>Авторизация</h2></center>
-    <center>
-        <form>
-            <label for="login">Логин</label><br>
-            <input type="text" id="login" name="login"><br>
-            <label for="pass">Пароль</label><br>
-            <input type="text" id="pass" name="pass"><br><br>
-            <input type="submit" value="Войти">
-        </form>
-    </center>
-</body>
-</html>
-`
-
-const authAlready = `
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>Авторизация</title>
-</head>
-<body>
-    <center><h2>Вы уже авторизованы</h2>
-    <input type="submit" value="Выйти">
-	</center>
-</body>
-</html>
-`
-
-const authFailed = `failed`
-
-const authOk = `ok`
-
 type authData struct {
 	login, pass string
 }
@@ -63,7 +22,7 @@ func parseAuthForm(form url.Values) (*authData, error) {
 
 func AuthHandler(w http.ResponseWriter, r *http.Request) {
 	r.ParseForm()
-	log.Println(r.Form)
+	log.Println("/auth", r.Form)
 	if r.Form.Has("login") {
 		data, err := parseAuthForm(r.Form)
 		if err != nil {
@@ -79,4 +38,45 @@ func AuthHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	fmt.Fprintf(w, "%s", authAlready)
+}
+
+func registerUser(data *authData) bool {
+	if users.Has(data.login) {
+		return false
+	}
+	users[data.login] = User{
+		Login:      data.login,
+		Password:   data.pass,
+		AccessType: USER,
+		UID:        0,
+	}
+	return true
+}
+
+func parseRegisterForm(form url.Values) bool {
+	login, pass, key := form.Get("login"), form.Get("pass"), form.Get("key")
+	pred := func(s string) bool {
+		return s == ""
+	}
+	if pred(login) || pred(pass) || key != KEY {
+		return false
+	}
+	return registerUser(&authData{login, pass})
+}
+
+func RegisterHandler(w http.ResponseWriter, r *http.Request) {
+	r.ParseForm()
+	log.Println("/register", r.Form)
+	if r.Form.Has("key") {
+		registered := parseRegisterForm(r.Form)
+		if !registered {
+			log.Println("/register: registration failed.")
+			fmt.Fprintf(w, "%s", registerFailed)
+		} else {
+			log.Println("/register: registration done.")
+			fmt.Fprintf(w, "%s", registerOk)
+		}
+		return
+	}
+	fmt.Fprintf(w, "%s", register)
 }
