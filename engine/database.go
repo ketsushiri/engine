@@ -46,6 +46,9 @@ const (
 	USER
 )
 
+// Ключ инвайта.
+const KEY = "123"
+
 type User struct {
 	UID             uint64
 	Login, Password string
@@ -54,3 +57,14 @@ type User struct {
 	// ID досок, на которых юзер имеет права модератора.
 	ModRights []uint64
 }
+
+type Base map[string]User
+
+func (m Base) Has(key string) bool {
+	_, ok := m[key]
+	return ok
+}
+
+var (
+	users = make(Base)
+)
