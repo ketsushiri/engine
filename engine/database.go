@@ -46,7 +46,7 @@ const (
 	USER
 )
 
-// Ключ инвайта.
+// Ключ для регистрации.
 const KEY = "123"
 
 type User struct {

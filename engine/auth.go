@@ -5,6 +5,7 @@ import (
 	"log"
 	"net/http"
 	"net/url"
+	"strings"
 	"time"
 )
 
@@ -12,12 +13,24 @@ type authData struct {
 	login, pass string
 }
 
-func makeCookie(key string, duration time.Duration) *http.Cookie {
+func makeCookie(data *authData, duration time.Duration) *http.Cookie {
 	return &http.Cookie{
 		Name:    "userkey",
-		Value:   "key",
+		Value:   fmt.Sprintf("%s %s", data.login, data.pass),
 		Expires: time.Now().Add(duration),
 	}
+}
+
+func validateCookie(cookie *http.Cookie) bool {
+	values := strings.Split(cookie.Value, " ")
+	if len(values) < 2 {
+		return false
+	}
+	login, pass := values[0], strings.Join(values[1:], " ")
+	if users.Has(login) && users[login].Password == pass {
+		return true
+	}
+	return false
 }
 
 func parseAuthForm(form url.Values) (*authData, error) {
@@ -42,11 +55,11 @@ func AuthHandler(w http.ResponseWriter, r *http.Request) {
 			fmt.Fprintf(w, "%s", authFailed)
 			return
 		}
-		http.SetCookie(w, makeCookie("value", time.Minute*30))
+		http.SetCookie(w, makeCookie(data, time.Minute*30))
 		fmt.Fprintf(w, "%s %q", authOk, data)
 		return
 	}
-	if _, err := r.Cookie("userkey"); err != nil {
+	if data, err := r.Cookie("userkey"); err != nil || !validateCookie(data) {
 		fmt.Fprintf(w, "%s", auth)
 		return
 	}
