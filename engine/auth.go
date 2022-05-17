@@ -5,16 +5,28 @@ import (
 	"log"
 	"net/http"
 	"net/url"
+	"time"
 )
 
 type authData struct {
 	login, pass string
 }
 
+func makeCookie(key string, duration time.Duration) *http.Cookie {
+	return &http.Cookie{
+		Name:    "userkey",
+		Value:   "key",
+		Expires: time.Now().Add(duration),
+	}
+}
+
 func parseAuthForm(form url.Values) (*authData, error) {
 	login, pass := form.Get("login"), form.Get("pass")
-	if login == "" || pass == "" {
+	if login == "" || pass == "" || !users.Has(login) {
 		return nil, fmt.Errorf("Auth invalid.")
+	}
+	if users[login].Password != pass {
+		return nil, fmt.Errorf("Invalid password")
 	}
 	data := authData{login, pass}
 	return &data, nil
@@ -26,14 +38,15 @@ func AuthHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Form.Has("login") {
 		data, err := parseAuthForm(r.Form)
 		if err != nil {
-			fmt.Fprintf(w, "%q", err)
+			log.Println("/auth", err)
+			fmt.Fprintf(w, "%s", authFailed)
 			return
 		}
-		// set up cookies here
+		http.SetCookie(w, makeCookie("value", time.Minute*30))
 		fmt.Fprintf(w, "%s %q", authOk, data)
 		return
 	}
-	if r.Header.Get("Set-Cookie") == "" {
+	if _, err := r.Cookie("userkey"); err != nil {
 		fmt.Fprintf(w, "%s", auth)
 		return
 	}
